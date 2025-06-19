@@ -1,0 +1,1198 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Симулятор гематологічного аналізатора</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background-color: #2c3e50;
+            color: #ffffff;
+            padding: 20px;
+            text-align: center;
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+            font-size: 1.8rem;
+            font-weight: 600;
+        }
+        .content-area {
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+        }
+        .input-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding-bottom: 30px;
+            border-bottom: 1px solid #e0e0e0;
+            margin-bottom: 30px;
+        }
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .input-group label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .input-group input[type="number"], .input-group select, .input-group input[type="date"], .input-group input[type="text"] {
+            padding: 12px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s;
+        }
+        .input-group input[type="number"]:focus, .input-group select:focus, .input-group input[type="date"]:focus, .input-group input[type="text"]:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 5px rgba(52, 152, 219, 0.3);
+        }
+        .input-group input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            accent-color: #3498db;
+            cursor: pointer;
+        }
+        .canvas-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        .canvas-container {
+            background-color: #333; /* Dark background for histograms */
+            border-radius: 10px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.2);
+            position: relative; /* For title positioning */
+        }
+        .canvas-container h3 {
+            color: #ffffff;
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+        canvas {
+            background-color: #000; /* Black background for chart area */
+            border-radius: 8px;
+            display: block;
+            max-width: 100%;
+            height: 250px; /* Fixed height for all histograms */
+        }
+        .analysis-section {
+            background-color: #ecf0f1;
+            border-radius: 10px;
+            padding: 20px;
+            margin-top: 30px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+        }
+        .analysis-section h2 {
+            font-size: 1.7rem;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .analysis-section p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: #555;
+            margin-bottom: 10px;
+        }
+        /* Style for radio buttons */
+        .radio-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .radio-group div {
+            display: flex;
+            align-items: center;
+        }
+        .radio-group input[type="radio"] {
+            margin-right: 8px;
+            accent-color: #3498db; /* Custom color for radio button */
+            width: 16px;
+            height: 16px;
+        }
+        .export-button {
+            background-color: #28a745;
+            color: white;
+            padding: 12px 25px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 1.1rem;
+            font-weight: 600;
+            margin-top: 20px;
+            transition: background-color 0.3s ease, transform 0.2s ease;
+            align-self: center; /* Center the button in the analysis section */
+        }
+        .export-button:hover {
+            background-color: #218838;
+            transform: translateY(-2px);
+        }
+        .export-button:active {
+            transform: translateY(0);
+        }
+
+        .results-table, .normal-ranges-section {
+            margin-top: 30px;
+            background-color: #fff;
+            border-radius: 10px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            padding: 20px;
+        }
+        .results-table h2, .normal-ranges-section h2 {
+            font-size: 1.7rem;
+            color: #2c3e50;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        .results-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+        }
+        .result-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 15px;
+            background-color: #f8f8f8;
+            border-radius: 8px;
+            border: 1px solid #eee;
+            font-size: 1rem;
+        }
+        .result-item .param {
+            font-weight: 600;
+            color: #333;
+        }
+        .result-item .value {
+            /* Color will be set by JS */
+        }
+        .result-item .unit {
+            color: #777;
+            font-size: 0.9em;
+        }
+
+        .toggle-switch {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            gap: 10px;
+            font-weight: 600;
+            color: #333;
+        }
+        .toggle-switch input[type="checkbox"] {
+            position: relative;
+            width: 40px;
+            height: 20px;
+            -webkit-appearance: none;
+            background: #c6c6c6;
+            outline: none;
+            border-radius: 20px;
+            box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.2);
+            transition: 0.5s;
+        }
+        .toggle-switch input[type="checkbox"]:checked {
+            background: #3498db;
+        }
+        .toggle-switch input[type="checkbox"]::before {
+            content: '';
+            position: absolute;
+            width: 16px;
+            height: 16px;
+            border-radius: 20px;
+            top: 2px;
+            left: 2px;
+            background: #ffffff;
+            transform: scale(1.1);
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+            transition: 0.5s;
+        }
+        .toggle-switch input[type="checkbox"]:checked::before {
+            left: 22px;
+        }
+
+        .norms-group {
+            margin-top: 15px;
+            border: 1px solid #e9e9e9;
+            border-radius: 8px;
+            padding: 15px;
+            background-color: #fdfdfd;
+        }
+        .norms-group h3 {
+            font-size: 1.3rem;
+            color: #34495e;
+            margin-bottom: 10px;
+            text-align: left;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 5px;
+        }
+        .norms-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            font-size: 0.95rem;
+        }
+        .norms-item .param {
+            font-weight: 500;
+            color: #555;
+        }
+        .norms-item .value {
+            font-weight: 600;
+            color: #222;
+        }
+        .norms-note {
+            font-size: 0.85rem;
+            color: #777;
+            margin-top: 15px;
+            text-align: center;
+        }
+
+        .select-group-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        /* Color classes for results */
+        .text-low {
+            color: #3498db; /* Blue */
+        }
+        .text-normal {
+            color: #2c3e50; /* Black/Dark Gray */
+        }
+        .text-high {
+            color: #e74c3c; /* Red */
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            Симулятор гематологічного аналізатора
+        </div>
+        <div class="content-area">
+            <div class="input-section">
+                <div class="input-group">
+                    <label for="wbc">WBC (10^9/L):</label>
+                    <input type="number" id="wbc" value="7.5" min="0" step="0.1">
+                </div>
+                <div class="input-group">
+                    <label for="rbc">RBC (10^12/L):</label>
+                    <input type="number" id="rbc" value="4.5" min="0" step="0.01">
+                </div>
+                <div class="input-group">
+                    <label for="plt">PLT (10^9/L):</label>
+                    <input type="number" id="plt" value="250" min="0" step="1">
+                </div>
+                <div class="input-group">
+                    <label for="hgb">HGB (g/dL):</label>
+                    <input type="number" id="hgb" value="14.0" min="0" step="0.1">
+                </div>
+                <div class="input-group">
+                    <label for="mcv">MCV (fL):</label>
+                    <input type="number" id="mcv" value="90" min="0" step="0.1">
+                </div>
+                <div class="input-group">
+                    <label for="mpv">MPV (fL):</label>
+                    <input type="number" id="mpv" value="9.0" min="0" step="0.1">
+                </div>
+                
+                <div class="input-group">
+                    <label for="lymAbsolute">LYM# (10^9/L):</label>
+                    <input type="number" id="lymAbsolute" value="2.5" min="0" step="0.01">
+                </div>
+                <div class="input-group">
+                    <label for="midAbsolute">MID# (10^9/L):</label>
+                    <input type="number" id="midAbsolute" value="0.75" min="0" step="0.01">
+                </div>
+                <div class="input-group">
+                    <label for="granAbsolute">GRAN# (10^9/L):</label>
+                    <input type="number" id="granAbsolute" value="4.25" min="0" step="0.01">
+                </div>
+
+                <div class="input-group">
+                    <label for="bloodType">Тип крові:</label>
+                    <select id="bloodType" class="w-full">
+                        <option value="venous">Венозна</option>
+                        <option value="capillary">Капілярна</option>
+                        <option value="qc">Контроль Якості</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Режим:</label>
+                    <div class="radio-group">
+                        <div>
+                            <input type="radio" id="wholeBlood" name="mode" value="wholeBlood" checked>
+                            <label for="wholeBlood">Цільна кров</label>
+                        </div>
+                        <div>
+                            <input type="radio" id="predilution" name="mode" value="predilution">
+                            <label for="predilution">Попереднє розведення</label>
+                        </div>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label for="analysisDate">Дата аналізу:</label>
+                    <input type="date" id="analysisDate">
+                </div>
+                <div class="input-group">
+                    <label for="sampleId">Ідентифікаційний номер зразку:</label>
+                    <input type="text" id="sampleId" value="SAMPLE-001">
+                </div>
+                <div class="input-group">
+                    <label for="patientName">Ім'я пацієнта:</label>
+                    <input type="text" id="patientName" value="Іван Бондаренко">
+                </div>
+            </div>
+
+            <div class="canvas-section">
+                <div class="canvas-container">
+                    <h3>WBC Гістограма (fL)</h3>
+                    <canvas id="wbcCanvas"></canvas>
+                </div>
+                <div class="canvas-container">
+                    <h3>RBC Гістограма (fL)</h3>
+                    <canvas id="rbcCanvas"></canvas>
+                </div>
+                <div class="canvas-container">
+                    <h3>PLT Гістограма (fL)</h3>
+                    <canvas id="pltCanvas"></canvas>
+                </div>
+            </div>
+
+            <div class="analysis-section">
+                <h2>Аналіз гістограм та показників</h2>
+                <p id="wbcAnalysis">Аналіз WBC: Нормальні значення WBC знаходяться в діапазоні 4.0-10.0 x 10^9/L. Форма гістограми зазвичай трипікова.</p>
+                <p id="rbcAnalysis">Аналіз RBC: Нормальні значення RBC знаходяться в діапазоні 4.0-5.5 x 10^12/L. Гістограма має симетричний, одновершинний вигляд.</p>
+                <p id="pltAnalysis">Аналіз PLT: Нормальні значення PLT знаходяться в діапазоні 150-400 x 10^9/L. Гістограма зазвичай асиметрична, зі "хвостом" справа.</p>
+                <p id="overallAnalysis">Загальний аналіз: Введіть значення для отримання детального аналізу.</p>
+                <p id="systemInfo">Тип крові: Венозна, Режим: Цільна кров.</p>
+            </div>
+
+            <div class="results-table">
+                <h2>Результати аналізу</h2>
+                <div class="results-grid" id="calculatedResults">
+                    </div>
+                <button id="exportButton" class="export-button">Експортувати висновок</button>
+            </div>
+
+            <div class="normal-ranges-section">
+                <div class="toggle-switch">
+                    <label for="toggleNorms">Показати/Приховати Норми Показників:</label>
+                    <input type="checkbox" id="toggleNorms">
+                </div>
+                <div class="select-group-container">
+                    <label for="normGroupSelect" class="font-semibold text-gray-700">Виберіть групу:</label>
+                    <select id="normGroupSelect" class="p-2 border border-gray-300 rounded-lg">
+                        <option value="man">Чоловік</option>
+                        <option value="woman">Жінка</option>
+                        <option value="child">Дитина (6-12 років)</option>
+                        <option value="elderly">Людина похилого віку (>60 років)</option>
+                        <option value="infant">Немовля (0-3 місяці)</option>
+                    </select>
+                </div>
+                <h2 class="hidden" id="normsSectionTitle">Нормальні показники аналізу крові</h2>
+                <div id="normsDisplayArea">
+                    </div>
+                <p class="norms-note">Ці діапазони є приблизними і можуть відрізнятися залежно від віку, конкретної лабораторії та методології.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const wbcInput = document.getElementById('wbc');
+        const rbcInput = document.getElementById('rbc');
+        const pltInput = document.getElementById('plt');
+        const hgbInput = document.getElementById('hgb');
+        const mcvInput = document.getElementById('mcv');
+        const mpvInput = document.getElementById('mpv');
+        const analysisDateInput = document.getElementById('analysisDate');
+        const sampleIdInput = document.getElementById('sampleId'); 
+        const patientNameInput = document.getElementById('patientName'); 
+
+        const lymAbsoluteInput = document.getElementById('lymAbsolute');
+        const midAbsoluteInput = document.getElementById('midAbsolute');
+        const granAbsoluteInput = document.getElementById('granAbsolute');
+
+        const bloodTypeSelect = document.getElementById('bloodType');
+        const modeRadios = document.querySelectorAll('input[name="mode"]');
+
+        const wbcCanvas = document.getElementById('wbcCanvas');
+        const rbcCanvas = document.getElementById('rbcCanvas');
+        const pltCanvas = document.getElementById('pltCanvas');
+
+        const wbcCtx = wbcCanvas.getContext('2d');
+        const rbcCtx = rbcCanvas.getContext('2d');
+        const pltCtx = pltCanvas.getContext('2d');
+
+        const wbcAnalysisElem = document.getElementById('wbcAnalysis');
+        const rbcAnalysisElem = document.getElementById('rbcAnalysis');
+        const pltAnalysisElem = document.getElementById('pltAnalysis');
+        const overallAnalysisElem = document.getElementById('overallAnalysis');
+        const systemInfoElem = document.getElementById('systemInfo');
+        const calculatedResultsElem = document.getElementById('calculatedResults');
+        const exportButton = document.getElementById('exportButton');
+
+        const toggleNormsCheckbox = document.getElementById('toggleNorms');
+        const normsSectionTitle = document.getElementById('normsSectionTitle');
+        const normsDisplayArea = document.getElementById('normsDisplayArea');
+        const normGroupSelect = document.getElementById('normGroupSelect');
+
+        const normalRangesData = {
+            man: {
+                label: "Чоловік",
+                WBC: { min: 4.0, max: 10.0, unit: "10^9/L" },
+                RBC: { min: 4.5, max: 5.9, unit: "10^12/L" },
+                PLT: { min: 150, max: 400, unit: "10^9/L" },
+                HGB: { min: 13.5, max: 17.5, unit: "g/dL" },
+                MCV: { min: 80, max: 100, unit: "fL" },
+                MPV: { min: 7.5, max: 10.5, unit: "fL" },
+                LYM_percent: { min: 20, max: 40, unit: "%" },
+                MID_percent: { min: 3, max: 15, unit: "%" },
+                GRAN_percent: { min: 40, max: 72, unit: "%" }
+            },
+            woman: {
+                label: "Жінка",
+                WBC: { min: 4.0, max: 10.0, unit: "10^9/L" },
+                RBC: { min: 3.8, max: 5.2, unit: "10^12/L" },
+                PLT: { min: 150, max: 400, unit: "10^9/L" },
+                HGB: { min: 12.0, max: 16.0, unit: "g/dL" },
+                MCV: { min: 80, max: 100, unit: "fL" },
+                MPV: { min: 7.5, max: 10.5, unit: "fL" },
+                LYM_percent: { min: 20, max: 40, unit: "%" },
+                MID_percent: { min: 3, max: 15, unit: "%" },
+                GRAN_percent: { min: 40, max: 72, unit: "%" }
+            },
+            child: { // Approx. for school-aged children (e.g., 6-12 years)
+                label: "Дитина (6-12 років)",
+                WBC: { min: 4.5, max: 10.0, unit: "10^9/L" },
+                RBC: { min: 3.5, max: 4.7, unit: "10^12/L" },
+                PLT: { min: 160, max: 380, unit: "10^9/L" },
+                HGB: { min: 11.0, max: 14.5, unit: "g/dL" },
+                MCV: { min: 75, max: 95, unit: "fL" },
+                MPV: { min: 7.5, max: 10.5, unit: "fL" },
+                LYM_percent: { min: 24, max: 54, unit: "%" },
+                MID_percent: { min: 2, max: 12, unit: "%" },
+                GRAN_percent: { min: 35, max: 65, unit: "%" }
+            },
+            elderly: { // Approx. for >60 years, using a blended or typical range as gender is already differentiated by group
+                label: "Людина похилого віку (>60 років)",
+                WBC: { min: 4.0, max: 9.0, unit: "10^9/L" },
+                RBC: { min: 3.5, max: 5.5, unit: "10^12/L" },
+                PLT: { min: 150, max: 400, unit: "10^9/L" },
+                HGB: { min: 11.0, max: 16.0, unit: "g/dL" },
+                MCV: { min: 80, max: 100, unit: "fL" },
+                MPV: { min: 7.5, max: 10.5, unit: "fL" },
+                LYM_percent: { min: 15, max: 45, unit: "%" },
+                MID_percent: { min: 2, max: 12, unit: "%" },
+                GRAN_percent: { min: 40, max: 75, unit: "%" }
+            },
+            infant: { // Approx. for 0-3 months
+                label: "Немовля (0-3 місяці)",
+                WBC: { min: 8.5, max: 24.5, unit: "10^9/L" },
+                RBC: { min: 4.0, max: 7.0, unit: "10^12/L" },
+                PLT: { min: 180, max: 490, unit: "10^9/L" },
+                HGB: { min: 18.0, max: 24.0, unit: "g/dL" },
+                MCV: { min: 88, max: 123, unit: "fL" },
+                MPV: { min: 7.5, max: 10.5, unit: "fL" },
+                LYM_percent: { min: 30, max: 70, unit: "%" },
+                MID_percent: { min: 2, max: 12, unit: "%" },
+                GRAN_percent: { min: 20, max: 70, unit: "%" }
+            }
+        };
+
+        function drawHistogram(ctx, data, minX, maxX, maxY, color, tickInterval = null, discriminators = [], peakValue = null, actualValueForPeakLabel = null) {
+            const canvas = ctx.canvas;
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const width = canvas.width;
+            const height = canvas.height;
+            const padding = 30;
+            const drawAreaWidth = width - 2 * padding;
+            const drawAreaHeight = height - 2 * padding;
+
+            ctx.strokeStyle = '#666';
+            ctx.lineWidth = 1;
+            ctx.font = '12px Inter';
+            ctx.fillStyle = '#fff';
+
+            ctx.beginPath();
+            ctx.moveTo(padding, height - padding);
+            ctx.lineTo(width - padding, height - padding);
+            ctx.stroke();
+
+            const numberOfTicks = tickInterval ? (maxX - minX) / tickInterval : 5;
+            for (let i = 0; i <= numberOfTicks; i++) {
+                const value = minX + (i * (maxX - minX) / numberOfTicks);
+                const x = padding + (i / numberOfTicks) * drawAreaWidth;
+                ctx.fillText(value.toFixed(0), x - (value.toFixed(0).length * 3), height - padding + 20);
+                ctx.beginPath();
+                ctx.moveTo(x, height - padding);
+                ctx.lineTo(x, height - padding + 5);
+                ctx.stroke();
+            }
+
+            ctx.fillStyle = color;
+            ctx.beginPath();
+            ctx.moveTo(padding, height - padding);
+
+            for (let i = 0; i < data.length; i++) {
+                const x = padding + (i / data.length) * drawAreaWidth;
+                const barHeight = (data[i] / maxY) * drawAreaHeight;
+                ctx.lineTo(x, height - padding - Math.max(0, barHeight));
+            }
+
+            ctx.lineTo(width - padding, height - padding);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.strokeStyle = '#FFD700';
+            ctx.lineWidth = 2;
+            ctx.font = '14px Inter';
+            ctx.fillStyle = '#FFD700';
+            discriminators.forEach(disc => {
+                const xPos = padding + ((disc.value - minX) / (maxX - minX)) * drawAreaWidth;
+                if (xPos >= padding && xPos <= width - padding) {
+                    ctx.beginPath();
+                    ctx.moveTo(xPos, height - padding);
+                    ctx.lineTo(xPos, padding);
+                    ctx.stroke();
+                    ctx.fillText(disc.label, xPos + 5, padding + 15);
+                }
+            });
+
+            if (peakValue !== null) {
+                ctx.strokeStyle = '#00FF00';
+                ctx.lineWidth = 2;
+                ctx.font = '14px Inter';
+                ctx.fillStyle = '#00FF00';
+                const peakX = padding + ((peakValue - minX) / (maxX - minX)) * drawAreaWidth;
+                if (peakX >= padding && peakX <= width - padding) {
+                    ctx.beginPath();
+                    ctx.moveTo(peakX, height - padding);
+                    ctx.lineTo(peakX, padding);
+                    ctx.stroke();
+                    const peakLabel = (actualValueForPeakLabel === 0) ? `Пік: 0.0fL` : `Пік: ${peakValue.toFixed(1)}fL`;
+                    ctx.fillText(peakLabel, peakX + 5, height - padding - 10);
+                }
+            }
+        }
+
+        function generateHistogramData(ctx, type, value, mcvVal, mpvVal, bloodType, mode, actualLymA, actualMidA, actualGranA) {
+            let data = new Array(100).fill(0);
+            let anomaly = false;
+            let minRange, maxRange;
+            let calculatedProperties = {};
+
+            const flToBin = (fl, currentMinRange, currentMaxRange) => {
+                const scale = 100 / (currentMaxRange - currentMinRange);
+                return Math.floor((fl - currentMinRange) * scale);
+            };
+
+            const binToFl = (bin, currentMinRange, currentMaxRange) => {
+                const scale = (currentMaxRange - currentMinRange) / 100;
+                return currentMinRange + bin * scale;
+            };
+
+            switch (type) {
+                case 'wbc':
+                    minRange = 0; maxRange = 300;
+                    
+                    const lymPeakFl = 70;
+                    const midPeakFl = 120;
+                    const granPeakFl = 220;
+
+                    let totalCellsWBC = value * 100;
+
+                    let sumAbsolute = actualLymA + actualMidA + actualGranA;
+
+                    let normalizedLymA = 0, normalizedMidA = 0, normalizedGranA = 0;
+                    let actualLymP = 0, actualMidP = 0, actualGranP = 0;
+
+                    if (value > 0 && sumAbsolute > 0) {
+                        const scaleFactor = value / sumAbsolute;
+                        normalizedLymA = actualLymA * scaleFactor;
+                        normalizedMidA = actualMidA * scaleFactor;
+                        normalizedGranA = actualGranA * scaleFactor;
+
+                        actualLymP = (normalizedLymA / value) * 100;
+                        actualMidP = (normalizedMidA / value) * 100;
+                        actualGranP = (normalizedGranA / value) * 100;
+                    }
+
+                    data.fill(0);
+                    for (let i = 0; i < data.length; i++) {
+                        const flValue = binToFl(i, minRange, maxRange);
+                        const distLym = Math.abs(flValue - lymPeakFl);
+                        const distMid = Math.abs(flValue - midPeakFl);
+                        const distGran = Math.abs(flValue - granPeakFl);
+
+                        data[i] += Math.max(0, totalCellsWBC * (actualLymP / 100) * (1 - distLym / 40));
+                        data[i] += Math.max(0, totalCellsWBC * (actualMidP / 100) * (1 - distMid / 40));
+                        data[i] += Math.max(0, totalCellsWBC * (actualGranP / 100) * (1 - distGran / 80));
+                    }
+
+                    calculatedProperties.lymPercent = actualLymP;
+                    calculatedProperties.midPercent = actualMidP;
+                    calculatedProperties.granPercent = actualGranP;
+                    calculatedProperties.lymAbsolute = normalizedLymA;
+                    calculatedProperties.midAbsolute = normalizedMidA;
+                    calculatedProperties.granAbsolute = normalizedGranA;
+
+                    data = data.map(val => val + (Math.random() - 0.5) * totalCellsWBC * 0.005);
+                    data = smoothArray(data, 5);
+                    
+                    if (value < 2.0) {
+                        data = data.map(val => val * (value / 2.0));
+                    } else if (value > 15.0) {
+                        data = data.map(val => val * (value / 15.0));
+                    }
+
+                    if (value < 3.0 || value > 12.0) {
+                        anomaly = true;
+                        if (value < 3.0) {
+                            for (let i = 0; i < data.length; i++) {
+                                const flVal = binToFl(i, minRange, maxRange);
+                                if (flVal > 90 && flVal < 200) data[i] *= 0.5;
+                            }
+                        } else if (value > 20.0) {
+                            for (let i = 0; i < data.length; i++) {
+                                const flVal = binToFl(i, minRange, maxRange);
+                                if (flVal > 250) {
+                                    const prevBinFl = binToFl(Math.floor(flToBin(249, minRange, maxRange)), minRange, maxRange);
+                                    data[i] += data[flToBin(prevBinFl, minRange, maxRange)] * (1 - (flVal - 250) / 50);
+                                }
+                            }
+                        }
+                        data = smoothArray(data, 7);
+                    }
+                    break;
+
+                case 'rbc':
+                    minRange = 0; maxRange = 250;
+                    const mcvFl = mcvVal; // MCV in fL
+                    let widthFlRBC = 15; // Standard deviation in fL, initial guess
+
+                    // RDW simulation based on MCV deviation
+                    let rdw_cv_sim = (Math.random() * 5) + 12; // Base RDW-CV
+                    if (mcvFl < 80) { // Microcytosis tends to increase RDW
+                        rdw_cv_sim += 5;
+                    } else if (mcvFl > 100) { // Macrocytosis tends to increase RDW
+                        rdw_cv_sim += 5;
+                    }
+                    widthFlRBC = (mcvFl * rdw_cv_sim / 100) / 2; // Approximate width based on RDW-CV
+
+                    for (let i = 0; i < data.length; i++) {
+                        const binFlValue = binToFl(i, minRange, maxRange);
+                        const dist = Math.abs(binFlValue - mcvFl);
+                        // Gaussian distribution for RBC
+                        data[i] = Math.exp(-0.5 * (dist / widthFlRBC) ** 2) * value * 50;
+                    }
+
+                    // Influence of MCV and RDW
+                    if (mcvFl < 80 || mcvFl > 100) {
+                        anomaly = true;
+                    }
+                    
+                    data = data.map(val => val + (Math.random() - 0.5) * value * 0.05); // Add noise
+                    data = smoothArray(data, 5); // Increased smoothing
+                    
+                    calculatedProperties.rbcWidthFl = widthFlRBC; // Store for RDW-SD calculation
+                    break;
+
+                case 'plt':
+                    minRange = 0; maxRange = 25; // PLT fL range
+                    const mpvReference = mpvVal; // Mean Platelet Volume from input
+
+                    // Simulate PDW based on MPV.
+                    let simulatedPdwCv = 14; // Default PDW-CV (typical range 10-18%)
+                    if (mpvReference < 7.0) {
+                        simulatedPdwCv = Math.max(8, simulatedPdwCv - 4); 
+                    } else if (mpvReference > 11.0) {
+                        simulatedPdwCv = Math.min(20, simulatedPdwCv + 4); 
+                    }
+                    let widthFlPLT = Math.max(0.5, (mpvReference * simulatedPdwCv / 100) / 2); // Ensure a minimum width
+
+                    // Determine the overall amplitude (height) of the histogram peak.
+                    const minVisibleDataAmplitude = 0.05; // Minimum raw data value for a visually discernible flat line
+                    let currentPeakAmplitude;
+
+                    if (value > 0) {
+                        currentPeakAmplitude = (value / 250) * 100; // Scale based on actual PLT value (250 is reference)
+                        currentPeakAmplitude = Math.max(minVisibleDataAmplitude * 100, currentPeakAmplitude); // Ensure noticeable peak height
+                    } else {
+                        // If PLT count is 0, produce a flat line with some noise
+                        data.fill(minVisibleDataAmplitude); 
+                        data = data.map(val => val + (Math.random() - 0.5) * minVisibleDataAmplitude * 0.5); 
+                        data = smoothArray(data, 3); 
+                        
+                        return { data: data, anomaly: false, peakValueFl: 0.0, minRange: minRange, maxRange: maxRange, calculatedProperties: {} };
+                    }
+
+                    for (let i = 0; i < data.length; i++) {
+                        const binFlValue = binToFl(i, minRange, maxRange);
+                        const distFromMpv = binFlValue - mpvReference; 
+
+                        let pointValue = Math.exp(-0.5 * (distFromMpv / widthFlPLT) ** 2);
+                        
+                        if (binFlValue > mpvReference) {
+                            const tailMultiplier = 1 + (distFromMpv / (maxRange - mpvReference)) * 3.0; 
+                            pointValue *= tailMultiplier;
+                        } else if (binFlValue < mpvReference && mpvReference > minRange) {
+                            pointValue *= (1 - (Math.abs(distFromMpv) / (mpvReference - minRange)) * 0.8); 
+                        }
+
+                        data[i] = Math.max(0, pointValue * currentPeakAmplitude); 
+                    }
+                    
+                    data = data.map(val => val + (Math.random() - 0.5) * currentPeakAmplitude * 0.03);
+                    data = smoothArray(data, 9); 
+
+                    if (value < 50) { 
+                        data = data.map(val => val * 0.4); 
+                        data = smoothArray(data, 12); 
+                    } else if (value < 150 && value >= 50) { 
+                        data = data.map(val => val * 0.7); 
+                    } else if (value > 600) { 
+                        data = data.map(val => val * 1.5); 
+                        data = smoothArray(data, 12);
+                    }
+                    
+                    calculatedProperties.pltWidthFl = widthFlPLT;
+
+                    let largePltArea = 0;
+                    for (let i = 0; i < data.length; i++) {
+                        const flVal = binToFl(i, minRange, maxRange);
+                        if (flVal > 12) { 
+                            largePltArea += data[i];
+                        }
+                    }
+                    let totalPltArea = data.reduce((sum, val) => sum + val, 0);
+                    calculatedProperties.pLCR = (totalPltArea > 0) ? (largePltArea / totalPltArea) * 100 : 0;
+                    calculatedProperties.pLCR = isNaN(calculatedProperties.pLCR) ? 0 : calculatedProperties.pLCR;
+
+                    break;
+            }
+
+            if (bloodType === 'capillary') {
+                data = data.map(val => val * (1 + (Math.random() - 0.5) * 0.05));
+                data = smoothArray(data, 3);
+            } else if (bloodType === 'qc') {
+                data = data.map(val => val * (1 + (Math.random() - 0.5) * 0.01));
+                data = smoothArray(data, 2);
+            }
+
+            if (mode === 'predilution') {
+                data = data.map(val => val * 0.98);
+            }
+            
+            let maxCount = 0;
+            let peakBinIndex = 0;
+            for (let i = 0; i < data.length; i++) {
+                if (data[i] > maxCount) {
+                    maxCount = data[i];
+                    peakBinIndex = i;
+                }
+            }
+            const peakValueFl = binToFl(peakBinIndex, minRange, maxRange);
+
+
+            return { data: data, anomaly: anomaly, peakValueFl: peakValueFl, minRange: minRange, maxRange: maxRange, calculatedProperties: calculatedProperties };
+        }
+
+        function smoothArray(arr, windowSize) {
+            const smoothed = [];
+            for (let i = 0; i < arr.length; i++) {
+                const left = Math.max(0, i - Math.floor(windowSize / 2));
+                const right = Math.min(arr.length - 1, i + Math.ceil(windowSize / 2) - 1);
+                let sum = 0;
+                for (let j = left; j <= right; j++) {
+                    sum += arr[j];
+                }
+                smoothed.push(sum / (right - left + 1));
+            }
+            return smoothed;
+        }
+
+        function getRangeColorClass(value, range) {
+            if (value < range.min) {
+                return 'text-low';
+            } else if (value > range.max) {
+                return 'text-high';
+            } else {
+                return 'text-normal';
+            }
+        }
+
+        function updateAll() {
+            const wbcVal = parseFloat(wbcInput.value);
+            const currentWBC = wbcVal > 0 ? wbcVal : 1; 
+
+            let lymAbsoluteVal = parseFloat(lymAbsoluteInput.value);
+            let midAbsoluteVal = parseFloat(midAbsoluteInput.value);
+            let granAbsoluteVal = parseFloat(granAbsoluteInput.value);
+
+            let sumAbsolute = lymAbsoluteVal + midAbsoluteVal + granAbsoluteVal;
+            if (sumAbsolute === 0 && wbcVal > 0) {
+                lymAbsoluteVal = currentWBC / 3;
+                midAbsoluteVal = currentWBC / 3;
+                granAbsoluteVal = currentWBC / 3;
+            } else if (sumAbsolute !== 0) {
+                const scaleFactor = currentWBC / sumAbsolute;
+                lymAbsoluteVal *= scaleFactor;
+                midAbsoluteVal *= scaleFactor;
+                granAbsoluteVal *= scaleFactor;
+            } else { 
+                lymAbsoluteVal = 0;
+                midAbsoluteVal = 0;
+                granAbsoluteVal = 0;
+            }
+
+            lymAbsoluteInput.value = lymAbsoluteVal.toFixed(2);
+            midAbsoluteInput.value = midAbsoluteVal.toFixed(2);
+            granAbsoluteInput.value = granAbsoluteVal.toFixed(2);
+
+            const rbcVal = parseFloat(rbcInput.value);
+            const pltVal = parseFloat(pltInput.value);
+            const hgbVal = parseFloat(hgbInput.value);
+            const mcvVal = parseFloat(mcvInput.value);
+            const mpvVal = parseFloat(mpvInput.value);
+            
+            const selectedBloodType = bloodTypeSelect.value;
+            const selectedMode = document.querySelector('input[name="mode"]:checked').value;
+
+            const { data: wbcData, anomaly: wbcAnomaly, peakValueFl: wbcPeak, calculatedProperties: wbcProps, minRange: wbcMinRange, maxRange: wbcMaxRange } = generateHistogramData(wbcCtx, 'wbc', wbcVal, 0, 0, selectedBloodType, selectedMode, lymAbsoluteVal, midAbsoluteVal, granAbsoluteVal);
+            const maxWbc = Math.max(...wbcData);
+            const fixedWbcDiscriminators = [{ value: 35, label: 'L1' }, { value: 90, label: 'L2' }, { value: 160, label: 'L3' }];
+            drawHistogram(wbcCtx, wbcData, wbcMinRange, wbcMaxRange, Math.max(maxWbc * 1.2, 10), '#00C8F5', 50, fixedWbcDiscriminators, wbcPeak, wbcVal);
+
+            const { data: rbcData, anomaly: rbcAnomaly, peakValueFl: rbcPeak, calculatedProperties: rbcProps, minRange: rbcMinRange, maxRange: rbcMaxRange } = generateHistogramData(rbcCtx, 'rbc', rbcVal, mcvVal, 0, selectedBloodType, selectedMode, 0, 0, 0);
+            const maxRbc = Math.max(...rbcData);
+            const fixedRbcDiscriminators = [{ value: 30, label: 'R1' }];
+            drawHistogram(rbcCtx, rbcData, rbcMinRange, rbcMaxRange, Math.max(maxRbc * 1.2, 10), '#FF5733', 50, fixedRbcDiscriminators, rbcPeak, rbcVal);
+
+            const { data: pltData, anomaly: pltAnomaly, peakValueFl: pltPeak, calculatedProperties: pltProps, minRange: pltMinRange, maxRange: pltMaxRange } = generateHistogramData(pltCtx, 'plt', pltVal, mcvVal, mpvVal, selectedBloodType, selectedMode, 0,0,0);
+            const maxPlt = Math.max(...pltData);
+            const fixedPltDiscriminators = [{ value: 10, label: 'P1' }];
+            drawHistogram(pltCtx, pltData, pltMinRange, pltMaxRange, Math.max(maxPlt * 1.2, 10), '#8BC34A', 5, fixedPltDiscriminators, pltPeak, pltVal);
+
+            performAnalysis(wbcVal, rbcVal, pltVal, hgbVal, mcvVal, mpvVal, wbcAnomaly, rbcAnomaly, pltAnomaly, selectedBloodType, selectedMode, wbcProps, rbcProps, pltProps);
+        }
+
+        function performAnalysis(wbc, rbc, plt, hgb, mcv, mpv, wbcAnomaly, rbcAnomaly, pltAnomaly, bloodType, mode, wbcProps, rbcProps, pltProps) {
+            let wbcText = `WBC (${wbc} 10^9/L): `;
+            if (wbc < 4.0) {
+                wbcText += `Знижений показник (лейкопенія). Гістограма може мати знижені піки. `;
+            } else if (wbc > 10.0) {
+                wbcText += `Підвищений показник (лейкоцитоз). Гістограма може бути розширена або мати додаткові піки. `;
+            } else {
+                wbcText += `У межах норми. Гістограма зазвичай трипікова (лімфоцити, середні клітини, гранулоцити). `;
+            }
+            if (wbcAnomaly) wbcText += `Можливі аномалії форми гістограми.`;
+            wbcAnalysisElem.textContent = wbcText;
+
+            let rbcText = `RBC (${rbc} 10^12/L): `;
+            if (rbc < 4.0) {
+                rbcText += `Знижений показник (анемія). `;
+            } else if (rbc > 5.5) {
+                rbcText += `Підвищений показник (поліцитемія). `;
+            } else {
+                rbcText += `У межах норми. `;
+            }
+            rbcText += `MCV (${mcv} fL). `;
+            if (mcv < 80) {
+                rbcText += `Мікроцитоз (маленькі еритроцити). Гістограма RBC зміщена вліво. `;
+            } else if (mcv > 100) {
+                rbcText += `Макроцитоз (великі еритроцити). Гістограма RBC зміщена вправо. `;
+            } else {
+                rbcText += `MCV у нормі. Гістограма RBC симетрична. `;
+            }
+            if (rbcAnomaly) rbcText += `Можливі аномалії форми гістограми або підвищений RDW (анизоцитоз).`;
+            rbcAnalysisElem.textContent = rbcText;
+
+            let pltText = `PLT (${plt} 10^9/L): `;
+            if (plt < 150) {
+                pltText += `Знижений показник (тромбоцитопенія). Гістограма може мати знижений пік. `;
+            } else if (plt > 400) {
+                pltText += `Підвищений показник (тромбоцитоз). Гістограма може бути розширена або зміщена. `;
+            } else {
+                pltText += `У межах норми. `;
+            }
+            pltText += `MPV (${mpv} fL). `;
+            if (mpv < 7.0) {
+                pltText += `Низький MPV (молодші тромбоцити менші). `;
+            } else if (mpv > 12.0) {
+                pltText += `Високий MPV (молодші тромбоцити більші). `;
+            } else {
+                pltText += `MPV у нормі. `;
+            }
+            if (pltAnomaly) pltText += `Можливі аномалії форми гістограми PLT.`;
+            pltAnalysisElem.textContent = pltText;
+
+            let overallText = `Загальний аналіз: `;
+            if (wbc < 4.0 || wbc > 10.0 || rbc < 4.0 || rbc > 5.5 || plt < 150 || plt > 400 || mcv < 80 || mcv > 100 || mpv < 7.0 || mpv > 12.0) {
+                overallText += `Наявні відхилення від нормальних показників. Зверніть увагу на відповідні гістограми та їх форму. `;
+                if (wbc < 4.0 || wbc > 10.0) overallText += `WBC поза нормою. `;
+                if (rbc < 4.0 || rbc > 5.5) overallText += `RBC поза нормою. `;
+                if (plt < 150 || plt > 400) overallText += `PLT поза нормою. `;
+                if (mcv < 80 || mcv > 100) overallText += `MCV поза нормою. `;
+                if (mpv < 7.0 || mpv > 12.0) overallText += `MPV поза нормою. `;
+            } else {
+                overallText += `Усі основні показники знаходяться в межах норми. Гістограми мають типові форми для здорового аналізу крові.`;
+            }
+            overallAnalysisElem.textContent = overallText;
+
+            const bloodTypeMap = { 'venous': 'Венозна', 'capillary': 'Капілярна', 'qc': 'Контроль Якості' };
+            const modeMap = { 'wholeBlood': 'Цільна кров', 'predilution': 'Попереднє розведення' };
+            systemInfoElem.textContent = `Тип крові: ${bloodTypeMap[bloodType]}, Режим: ${modeMap[mode]}.`;
+
+            const selectedGroupKey = normGroupSelect.value;
+            const currentNorms = normalRangesData[selectedGroupKey];
+
+            const calculatedParams = {
+                'WBC': { value: wbc, unit: '10^9/L', range: currentNorms.WBC },
+                'LYM%': { value: wbcProps.lymPercent, unit: '%', source: 'Calculated', range: currentNorms.LYM_percent },
+                'MID%': { value: wbcProps.midPercent, unit: '%', source: 'Calculated', range: currentNorms.MID_percent },
+                'GRAN%': { value: wbcProps.granPercent, unit: '%', source: 'Calculated', range: currentNorms.GRAN_percent },
+                'LYM#': { value: wbcProps.lymAbsolute, unit: '10^9/L', source: 'Input', range: null },
+                'MID#': { value: wbcProps.midAbsolute, unit: '10^9/L', source: 'Input', range: null },
+                'GRAN#': { value: wbcProps.granAbsolute, unit: '10^9/L', source: 'Input', range: null },
+                'RBC': { value: rbc, unit: '10^12/L', range: currentNorms.RBC },
+                'HGB': { value: hgb, unit: 'g/dL', range: currentNorms.HGB },
+                'HCT': { value: (rbc * mcv / 10), unit: '%' , range: null},
+                'MCV': { value: mcv, unit: 'fL', range: currentNorms.MCV },
+                'MCH': { value: (hgb * 10 / rbc), unit: 'pg', range: null },
+                'MCHC': { value: (hgb * 100 / (rbc * mcv / 10)), unit: 'g/dL', range: null },
+                'RDW-CV': { value: (rbcProps.rbcWidthFl / mcv) * 100, unit: '%', range: null },
+                'RDW-SD': { value: rbcProps.rbcWidthFl * 2, unit: 'fL', range: null },
+                'PLT': { value: plt, unit: '10^9/L', range: currentNorms.PLT },
+                'MPV': { value: mpv, unit: 'fL', range: currentNorms.MPV },
+                'PCT': { value: (plt * mpv / 10000), unit: '%' , range: null},
+                'PDW-SD': { value: pltProps.pltWidthFl * 2, unit: 'fL', range: null},
+                'PDW-CV': { value: (pltProps.pltWidthFl / mpv) * 100, unit: '%', range: null},
+                'P-LCR': { value: pltProps.pLCR, unit: '%' , range: null},
+                'P-LCC': { value: plt * (pltProps.pLCR / 100), unit: '10^9/L', range: null }
+            };
+
+            calculatedResultsElem.innerHTML = '';
+
+            for (const param in calculatedParams) {
+                const item = calculatedParams[param];
+                if (item.value === Infinity || isNaN(item.value)) {
+                     item.value = 'N/A';
+                }
+                
+                let colorClass = 'text-normal';
+                if (item.range) {
+                    colorClass = getRangeColorClass(item.value, item.range);
+                }
+
+                const div = document.createElement('div');
+                div.className = 'result-item';
+                div.innerHTML = `
+                    <span class="param">${param}:</span>
+                    <span class="value ${colorClass}">${typeof item.value === 'number' ? item.value.toFixed(param.includes('%') || param.includes('CV') ? 1 : (param.includes('fL') || param.includes('SD') ? 1 : 2)) : item.value}</span>
+                    <span class="unit">${item.unit}</span>
+                `;
+                calculatedResultsElem.appendChild(div);
+            }
+
+            exportAnalysis.currentCalculatedParams = calculatedParams;
+        }
+
+        function exportAnalysis() {
+            const currentCalculatedParams = exportAnalysis.currentCalculatedParams || {};
+            let paramsText = '';
+            for (const param in currentCalculatedParams) {
+                const item = currentCalculatedParams[param];
+                paramsText += `${param}: ${typeof item.value === 'number' ? item.value.toFixed(param.includes('%') || param.includes('CV') ? 1 : (param.includes('fL') || param.includes('SD') ? 1 : 2)) : item.value} ${item.unit}\n`;
+            }
+
+            const analysisContent = `
+Симулятор гематологічного аналізатора - Висновок
+
+Дата та час: ${analysisDateInput.value ? analysisDateInput.value : new Date().toLocaleString('uk-UA')}
+Ідентифікаційний номер зразку: ${sampleIdInput.value}
+Ім'я пацієнта: ${patientNameInput.value}
+
+Введені значення:
+WBC: ${wbcInput.value} 10^9/L
+RBC: ${rbcInput.value} 10^12/L
+PLT: ${pltInput.value} 10^9/L
+HGB: ${hgbInput.value} g/dL
+MCV: ${mcvInput.value} fL
+MPV: ${mpvInput.value} fL
+
+Системна інформація:
+${systemInfoElem.textContent}
+
+---
+Розраховані параметри:
+${paramsText}
+---
+
+Аналіз гістограм та показників:
+${wbcAnalysisElem.textContent}
+${rbcAnalysisElem.textContent}
+${pltAnalysisElem.textContent}
+${overallAnalysisElem.textContent}
+            `.trim();
+
+            const today = new Date();
+            const dateStr = `${today.getFullYear()}-${(today.getMonth() + 1).toString().padStart(2, '0')}-${today.getDate().toString().padStart(2, '0')}`;
+
+            const textBlob = new Blob([analysisContent], { type: 'text/plain;charset=utf-8' });
+            const textFilename = `Blood_Analysis_Report_${dateStr}.txt`;
+            
+            const textLink = document.createElement('a');
+            textLink.href = URL.createObjectURL(textBlob);
+            textLink.download = textFilename;
+            document.body.appendChild(textLink);
+            textLink.click();
+            document.body.removeChild(textLink);
+            URL.revokeObjectURL(textLink.href);
+
+            const wbcImage = wbcCanvas.toDataURL('image/png');
+            const wbcImageLink = document.createElement('a');
+            wbcImageLink.href = wbcImage;
+            wbcImageLink.download = `WBC_Histogram_${dateStr}.png`;
+            document.body.appendChild(wbcImageLink);
+            wbcImageLink.click();
+            document.body.removeChild(wbcImageLink);
+
+            const rbcImage = rbcCanvas.toDataURL('image/png');
+            const rbcImageLink = document.createElement('a');
+            rbcImageLink.href = rbcImage;
+            rbcImageLink.download = `RBC_Histogram_${dateStr}.png`;
+            document.body.appendChild(rbcImageLink);
+            rbcImageLink.click();
+            document.body.removeChild(rbcImageLink);
+
+            const pltImage = pltCanvas.toDataURL('image/png');
+            const pltImageLink = document.createElement('a');
+            pltImageLink.href = pltImage;
+            pltImageLink.download = `PLT_Histogram_${dateStr}.png`;
+            document.body.appendChild(pltImageLink);
+            pltImageLink.click();
+            document.body.removeChild(pltImageLink);
+        }
+        
+        function displayNormalRanges() {
+            normsDisplayArea.innerHTML = '';
+
+            if (toggleNormsCheckbox.checked) {
+                normsSectionTitle.classList.remove('hidden');
+                const selectedGroupKey = normGroupSelect.value;
+                const group = normalRangesData[selectedGroupKey];
+
+                if (group) {
+                    const groupDiv = document.createElement('div');
+                    groupDiv.className = 'norms-group';
+                    groupDiv.innerHTML = `<h3>${group.label}</h3>`;
+
+                    for (const paramKey in group) {
+                        if (paramKey !== 'label') {
+                            const paramDiv = document.createElement('div');
+                            paramDiv.className = 'norms-item';
+                            paramDiv.innerHTML = `
+                                <span class="param">${paramKey.replace('_percent', '%').replace('_absolute', '#')}:</span>
+                                <span class="value">${group[paramKey].min} - ${group[paramKey].max} ${group[paramKey].unit}</span>
+                            `;
+                            groupDiv.appendChild(paramDiv);
+                        }
+                    }
+                    normsDisplayArea.appendChild(groupDiv);
+                }
+            } else {
+                normsSectionTitle.classList.add('hidden');
+            }
+        }
+
+        toggleNormsCheckbox.addEventListener('change', () => {
+            displayNormalRanges();
+        });
+
+        normGroupSelect.addEventListener('change', () => {
+            displayNormalRanges();
+        });
+
+        function setCanvasSize() {
+            const canvasContainers = document.querySelectorAll('.canvas-container');
+            canvasContainers.forEach(container => {
+                const canvas = container.querySelector('canvas');
+                canvas.width = container.clientWidth - 30; 
+                updateAll(); 
+            });
+        }
+
+        wbcInput.addEventListener('input', updateAll);
+        rbcInput.addEventListener('input', updateAll);
+        pltInput.addEventListener('input', updateAll);
+        hgbInput.addEventListener('input', updateAll);
+        mcvInput.addEventListener('input', updateAll);
+        mpvInput.addEventListener('input', updateAll);
+
+        lymAbsoluteInput.addEventListener('input', updateAll);
+        midAbsoluteInput.addEventListener('input', updateAll);
+        granAbsoluteInput.addEventListener('input', updateAll);
+
+        analysisDateInput.addEventListener('change', updateAll);
+        sampleIdInput.addEventListener('input', updateAll); 
+        patientNameInput.addEventListener('input', updateAll); 
+
+        bloodTypeSelect.addEventListener('change', updateAll);
+        modeRadios.forEach(radio => radio.addEventListener('change', updateAll));
+        exportButton.addEventListener('click', exportAnalysis);
+
+        window.onload = () => {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = (today.getMonth() + 1).toString().padStart(2, '0');
+            const day = today.getDate().toString().padStart(2, '0');
+            analysisDateInput.value = `${year}-${month}-${day}`;
+
+            setCanvasSize(); 
+            displayNormalRanges();
+        };
+
+        window.addEventListener('resize', setCanvasSize);
+    </script>
+</body>
+</html>
